@@ -22,7 +22,7 @@ public class AgenciaController {
 
     @GET
     @Path("{id}")
-    public RestResponse<Agencia> buscar(Integer id) {
+    public RestResponse<Agencia> buscar(Long id) {
         Agencia agencia = agenciaService.buscarPorId(id);
         return RestResponse.ok(agencia);
     }
@@ -35,7 +35,7 @@ public class AgenciaController {
 
     @DELETE
     @Path("{id}")
-    public RestResponse<Void> excluir(Integer id) {
+    public RestResponse<Void> excluir(Long id) {
         agenciaService.excluirPorId(id);
         return RestResponse.ok();
     }
