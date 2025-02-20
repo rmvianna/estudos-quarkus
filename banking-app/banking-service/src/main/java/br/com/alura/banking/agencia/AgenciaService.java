@@ -3,6 +3,7 @@ package br.com.alura.banking.agencia;
 import br.com.alura.banking.agencia.validation.AgenciaDTO;
 import br.com.alura.banking.agencia.validation.AgenciaValidationApi;
 import br.com.alura.banking.agencia.validation.SituacaoCadastral;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -13,7 +14,7 @@ public class AgenciaService {
     @RestClient
     private AgenciaValidationApi agenciaValidationApi;
 
-    private AgenciaRepository agenciaRepository;
+    private final AgenciaRepository agenciaRepository;
 
     public AgenciaService(AgenciaRepository agenciaRepository) {
         this.agenciaRepository = agenciaRepository;
@@ -25,6 +26,7 @@ public class AgenciaService {
         validarAgenciaDuplicada(agencia);
 
         agenciaRepository.persist(agencia);
+        Log.infof("Agencia '%s' cadastrada com sucesso", agencia.getCnpj());
     }
 
     @Transactional
@@ -36,28 +38,31 @@ public class AgenciaService {
                 agencia.getRazaoSocial(),
                 agencia.getCnpj(),
                 agencia.getId());
+
+        Log.infof("Agencia '%s' alterada com sucesso", agencia.getCnpj());
     }
 
     public Agencia buscarPorId(Long id) {
         return agenciaRepository.findByIdOptional(id)
-                .orElseThrow(AgenciaInativaOuInexistenteException::new);
+                .orElseThrow(() -> new AgenciaInativaOuInexistenteException(id));
     }
 
     public void excluirPorId(Long id) {
         agenciaRepository.deleteById(id);
+        Log.infof("Agencia de ID %s excluída com sucesso", id);
     }
 
     private void validarSituacaoAgencia(Agencia agencia) {
         AgenciaDTO agenciaDTO = agenciaValidationApi.buscarPorCnpj(agencia.getCnpj());
 
         if (agenciaDTO == null || agenciaDTO.situacaoCadastral() != SituacaoCadastral.ATIVO) {
-            throw new AgenciaInativaOuInexistenteException();
+            throw new AgenciaInativaOuInexistenteException(agencia.getCnpj());
         }
     }
 
     private void validarAgenciaDuplicada(Agencia agencia) {
         if (agenciaRepository.findByCnpj(agencia.getCnpj()).isPresent()) {
-            throw new AgenciaDuplicadaException();
+            throw new AgenciaDuplicadaException(agencia.getCnpj());
         }
     }
 
